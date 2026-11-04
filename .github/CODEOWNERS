@@ -1,0 +1,5 @@
+# Sinh tự động bởi ol-handbook/bootstrap/github/bootstrap-github.ps1 — sửa trong config/repos.json
+# Dòng khớp SAU CÙNG thắng. Owner phải có quyền ghi vào repo.
+* @ol-company/backend
+/src/modules/auth/ @ol-company/backend @ol-company/security
+/.github/ @ol-company/platform
