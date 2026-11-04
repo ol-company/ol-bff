@@ -1,0 +1,32 @@
+# EditorConfig: thống nhất định dạng cơ bản giữa mọi editor (VS Code, JetBrains...)
+# Tài liệu: https://editorconfig.org
+# Lưu ý: chú thích phải nằm trên dòng riêng, không đặt sau giá trị.
+
+# Dừng tìm .editorconfig ở thư mục cha
+root = true
+
+# Áp dụng cho mọi file
+[*]
+# Mã hóa UTF-8 để tiếng Việt không lỗi
+charset = utf-8
+# Xuống dòng kiểu Unix, tránh diff "cả file" giữa Windows và Linux
+end_of_line = lf
+# Thụt lề bằng dấu cách, 2 dấu cách mỗi cấp (chuẩn phổ biến cho TS/JSON/YAML)
+indent_style = space
+indent_size = 2
+# Luôn có dòng trống cuối file (chuẩn POSIX)
+insert_final_newline = true
+# Xóa khoảng trắng thừa cuối dòng
+trim_trailing_whitespace = true
+
+# Markdown: 2 dấu cách cuối dòng nghĩa là xuống dòng cứng, không được xóa
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefile bắt buộc dùng tab
+[{Makefile,*.mk}]
+indent_style = tab
+
+# PowerShell: theo quy ước 4 dấu cách
+[*.{ps1,psm1}]
+indent_size = 4

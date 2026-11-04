@@ -1,0 +1,44 @@
+# --- Node.js ---
+node_modules/
+dist/
+build/
+coverage/
+.pnpm-store/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# --- Biến môi trường và bí mật: KHÔNG BAO GIỜ commit ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# --- Test và công cụ ---
+playwright-report/
+test-results/
+.vitest-cache/
+
+# --- Editor và hệ điều hành ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+desktop.ini

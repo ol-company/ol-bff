@@ -1,0 +1,30 @@
+# Lefthook: quản lý Git hooks cho mọi repo OL-Platform.
+# Cài một lần cho mỗi bản clone: `lefthook install`
+# Tài liệu: https://lefthook.dev
+
+pre-commit:
+  commands:
+    # Quét bí mật trong các file đang được stage, chặn commit nếu phát hiện.
+    # --pre-commit --staged : chỉ quét phần thay đổi sắp commit
+    # --redact              : che giá trị bí mật trong log
+    # --verbose             : in chi tiết vị trí phát hiện
+    gitleaks:
+      run: gitleaks git --pre-commit --redact --staged --verbose
+
+commit-msg:
+  commands:
+    # Kiểm tra dòng đầu commit message theo Conventional Commits.
+    # {1} là đường dẫn file chứa commit message do Git truyền vào hook.
+    conventional-commits:
+      run: |
+        msg="$(head -n1 {1})"
+        case "$msg" in
+          Merge\ *|Revert\ *|fixup!\ *|squash!\ *) exit 0 ;;
+        esac
+        pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+$'
+        if ! printf '%s\n' "$msg" | grep -Eq "$pattern"; then
+          echo "Commit message không đúng Conventional Commits:"
+          echo "  $msg"
+          echo "Ví dụ hợp lệ: feat(iam): thêm API mời người dùng"
+          exit 1
+        fi

@@ -1,0 +1,18 @@
+# Dependabot: tự mở PR nâng version dependency.
+# Bước 1 chỉ theo dõi GitHub Actions; Bước 2 sẽ thêm "npm", Bước 4 thêm "docker", Bước 6 thêm "terraform"
+# cho đúng repo có file manifest tương ứng.
+# Tài liệu: https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: github-actions   # Theo dõi các action dùng trong .github/workflows
+    directory: /                        # Thư mục gốc repo
+    schedule:
+      interval: weekly                  # Kiểm tra mỗi tuần
+      day: monday
+      time: "08:00"
+      timezone: Asia/Ho_Chi_Minh
+    groups:
+      github-actions:                   # Gộp mọi cập nhật action vào 1 PR để bớt nhiễu
+        patterns: ["*"]
+    commit-message:
+      prefix: ci                        # Commit dạng "ci: bump ..." — khớp Conventional Commits

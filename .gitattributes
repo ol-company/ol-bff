@@ -1,0 +1,25 @@
+# .gitattributes: quy định cách Git xử lý từng loại file
+# Mặc định: Git tự nhận file text và lưu trong repo với xuống dòng LF
+* text=auto eol=lf
+
+# Script shell phải là LF, nếu không sẽ lỗi "bad interpreter" trong container Linux
+*.sh text eol=lf
+
+# Batch/cmd của Windows cần CRLF
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# File nhị phân: không so sánh diff, không đổi xuống dòng
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.pdf binary
+*.zip binary
+*.woff binary
+*.woff2 binary
+
+# File khóa dependency: ẩn diff mặc định trên GitHub cho PR dễ đọc
+pnpm-lock.yaml linguist-generated=true -diff
