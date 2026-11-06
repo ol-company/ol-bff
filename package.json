@@ -1,0 +1,54 @@
+{
+  "name": "ol-bff",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend-for-Frontend của OL-Platform: OIDC client, session phía server, reverse proxy có xác thực cho trình duyệt",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=26 <27"
+  },
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node --enable-source-maps --import @ol/node-kit/otel-register dist/main.js",
+    "migrate": "node --enable-source-maps dist/migrate.js",
+    "migrate:dev": "tsx src/migrate.ts",
+    "db:new": "node scripts/new-migration.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@ol/node-kit": "npm:@ol-company/node-kit@^0.1.0",
+    "cookie": "^1.0.2",
+    "drizzle-orm": "^0.44.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
+    "helmet": "^8.1.0",
+    "http-proxy-middleware": "^3.0.5",
+    "jose": "^6.0.11",
+    "openid-client": "^6.6.2",
+    "pg": "^8.16.3",
+    "zod": "^4.0.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.30.0",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.4",
+    "@types/supertest": "^6.0.3",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.30.0",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.1",
+    "tsx": "^4.20.3",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.35.0",
+    "vitest": "^3.2.4"
+  }
+}

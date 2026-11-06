@@ -1,0 +1,12 @@
+# Không gửi những thứ này vào Docker build context
+node_modules
+dist
+coverage
+.git
+.github
+.env
+.env.*
+*.pem
+*.key
+test-results
+playwright-report
