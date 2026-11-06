@@ -1,18 +1,27 @@
-# Dependabot: tự mở PR nâng version dependency.
-# Bước 1 chỉ theo dõi GitHub Actions; Bước 2 sẽ thêm "npm", Bước 4 thêm "docker", Bước 6 thêm "terraform"
-# cho đúng repo có file manifest tương ứng.
-# Tài liệu: https://docs.github.com/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+# Dependabot: PR nâng dependency hằng tuần, gộp nhóm để bớt nhiễu. PR phải qua CI như mọi PR khác.
 version: 2
+registries:
+  github-packages:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{ secrets.DEPENDABOT_PACKAGES_TOKEN }} # Secret Dependabot cấp org (PAT chỉ có read:packages) — xem docs/05
 updates:
-  - package-ecosystem: github-actions   # Theo dõi các action dùng trong .github/workflows
-    directory: /                        # Thư mục gốc repo
-    schedule:
-      interval: weekly                  # Kiểm tra mỗi tuần
-      day: monday
-      time: "08:00"
-      timezone: Asia/Ho_Chi_Minh
+  - package-ecosystem: npm
+    directory: /
+    registries: [github-packages]
+    schedule: { interval: weekly, day: monday, time: "08:00", timezone: Asia/Ho_Chi_Minh }
+    open-pull-requests-limit: 10
+    commit-message: { prefix: build, include: scope }
     groups:
-      github-actions:                   # Gộp mọi cập nhật action vào 1 PR để bớt nhiễu
-        patterns: ["*"]
-    commit-message:
-      prefix: ci                        # Commit dạng "ci: bump ..." — khớp Conventional Commits
+      production:
+        dependency-type: production
+        update-types: [minor, patch]
+      development:
+        dependency-type: development
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday, time: "08:00", timezone: Asia/Ho_Chi_Minh }
+    groups:
+      github-actions: { patterns: ["*"] }
+    commit-message: { prefix: ci }

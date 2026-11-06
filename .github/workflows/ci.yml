@@ -1,0 +1,73 @@
+# CI/CD của ol-bff: kiểm tra chất lượng + bảo mật mọi PR; trên main: phát hành version, build image cho dev,
+# rồi build-image tự mở PR cập nhật digest môi trường dev ở ol-infra.
+# Các job dùng reusable workflow trong ol-build-tooling (pin SHA bằng scripts/pin-actions.sh).
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }} # PR mới đè PR cũ; main chạy tuần tự
+
+jobs:
+  ci:
+    uses: ol-company/ol-build-tooling/.github/workflows/node-ci.yml@v1.0.0
+    permissions:
+      contents: read
+      packages: read
+
+  security:
+    uses: ol-company/ol-build-tooling/.github/workflows/security-scan.yml@v1.0.0
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+      pull-requests: write
+
+  # PR: build image + quét lỗ hổng nhưng KHÔNG push — Dockerfile hỏng hoặc image có lỗ hổng thì chặn merge
+  image-check:
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@v1.0.0
+    with:
+      module: bff
+      source-repository: ${{ github.repository }}
+      source-ref: ${{ github.event.pull_request.head.sha }}
+      target-env: dev
+      push: false
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      attestations: write
+
+  release:
+    if: github.event_name == 'push'
+    needs: [ci, security]
+    uses: ol-company/ol-build-tooling/.github/workflows/release.yml@v1.0.0
+    secrets: inherit
+    permissions:
+      contents: read
+
+  build:
+    if: github.event_name == 'push'
+    needs: [ci, security, release]
+    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@v1.0.0
+    with:
+      module: bff
+      source-repository: ${{ github.repository }}
+      source-ref: ${{ github.sha }}
+      target-env: dev
+      update-infra-env: dev # Mở PR cập nhật deploy/dev/<module>.yaml, tự merge khi check xanh
+      version: ${{ needs.release.outputs.version || '0.0.0' }}
+    secrets: inherit
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      attestations: write

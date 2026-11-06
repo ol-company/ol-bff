@@ -1,20 +1,27 @@
-# <tên-repo>
+# ol-bff
 
-> Thuộc OL-Platform. Sổ tay chung: repo `ol-handbook`.
+Backend-for-Frontend: OIDC Authorization Code + PKCE với Keycloak, session phía server (token mã hóa AES-256-GCM trong PostgreSQL), reverse proxy `/api/<service>/*` gắn Bearer token, chống CSRF, back-channel logout, rate limit.
 
-## Mục đích
+## Cấu trúc
 
-<Một đoạn ngắn: repo này chịu trách nhiệm gì, không chịu trách nhiệm gì.>
-
-## Bắt đầu nhanh
-
-```powershell
-lefthook install   # Bật Git hooks (quét secret, kiểm tra commit message)
+```text
+src/
+├── auth/              # OIDC (openid-client), guard phiên + CSRF, route /auth/*
+├── session/           # Session store PostgreSQL, mã hóa token
+├── proxy/             # Reverse proxy /api/<service>/*
+├── app.ts / main.ts   # Dựng Express, khởi động server
+└── migrate.ts         # Chạy migration (role *_migrator)
+migrations/            # SQL migration — viết tay, review trong PR, không sửa file đã chạy
 ```
 
-<Lệnh cài đặt, chạy, test — bổ sung ở Bước 2.>
+## Lệnh
 
-## Liên kết
+| Lệnh | Ý nghĩa |
+|---|---|
+| `pnpm install` | Cài dependency (cần `$env:NODE_AUTH_TOKEN = gh auth token`) |
+| `pnpm test` | Unit + integration test (integration cần Docker cho Testcontainers) |
+| `pnpm typecheck` / `pnpm lint` / `pnpm format` | Kiểm tra kiểu / lint / định dạng |
+| `pnpm build` | Biên dịch ra `dist/` |
+| `pnpm db:new <tên>` | Tạo file migration mới |
 
-- Kiến trúc: `ol-handbook/docs/00-kien-truc-va-quyet-dinh.md`
-- Quy trình đóng góp: file CONTRIBUTING của Organization
+Chạy cả hệ thống ở local: xem `ol-infra/local` và `ol-handbook/docs/02-source-code-va-local.md`.
