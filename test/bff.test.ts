@@ -2,10 +2,9 @@
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import express from 'express';
-import { pino } from 'pino';
 import request from 'supertest';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { HealthState } from '@ol/node-kit';
+import { createLogger, HealthState } from '@ol/node-kit';
 import { buildApp } from '../src/app.js';
 import type { LoginTransaction, OidcPort } from '../src/auth/oidc.js';
 import { hashSessionId, TokenSealer } from '../src/session/crypto.js';
@@ -20,7 +19,11 @@ class MemoryStore implements SessionStore {
     return this.m.get(h) ?? null;
   }
   async touch() {}
-  async refreshIfNeeded(h: string, needs: (s: Session) => boolean, refresh: (s: Session) => Promise<Tokens>) {
+  async refreshIfNeeded(
+    h: string,
+    needs: (s: Session) => boolean,
+    refresh: (s: Session) => Promise<Tokens>,
+  ) {
     const s = this.m.get(h);
     if (!s) return null;
     if (!needs(s)) return s;
@@ -51,15 +54,32 @@ const store = new MemoryStore();
 let refreshCalls = 0;
 const oidc: OidcPort = {
   async startLogin(returnTo) {
-    return { url: 'https://id.ol.test/realms/ol/protocol/openid-connect/auth?x=1', tx: { state: 's', nonce: 'n', codeVerifier: 'v', returnTo } };
+    return {
+      url: 'https://id.ol.test/realms/ol/protocol/openid-connect/auth?x=1',
+      tx: { state: 's', nonce: 'n', codeVerifier: 'v', returnTo },
+    };
   },
   async finishLogin(_url: URL, tx: LoginTransaction) {
     if (tx.state !== 's') throw new Error('state');
-    return { sub: '11111111-1111-4111-8111-111111111111', sid: 'kc-sid-1', email: 'a@acme.test', name: 'A', idToken: 'id', accessToken: 'access-1', refreshToken: 'refresh-1', accessExpiresAt: new Date(Date.now() + 300_000) };
+    return {
+      sub: '11111111-1111-4111-8111-111111111111',
+      sid: 'kc-sid-1',
+      email: 'a@acme.test',
+      name: 'A',
+      idToken: 'id',
+      accessToken: 'access-1',
+      refreshToken: 'refresh-1',
+      accessExpiresAt: new Date(Date.now() + 300_000),
+    };
   },
   async refresh() {
     refreshCalls++;
-    return { idToken: 'id2', accessToken: 'access-2', refreshToken: 'refresh-2', accessExpiresAt: new Date(Date.now() + 300_000) };
+    return {
+      idToken: 'id2',
+      accessToken: 'access-2',
+      refreshToken: 'refresh-2',
+      accessExpiresAt: new Date(Date.now() + 300_000),
+    };
   },
   async endSessionUrl() {
     return 'https://id.ol.test/logout';
@@ -77,11 +97,18 @@ let app: ReturnType<typeof buildApp>;
 
 beforeAll(async () => {
   const u = express();
-  u.use((req, res) => void res.json({ path: req.url, authorization: req.headers.authorization ?? null, cookie: req.headers.cookie ?? null }));
+  u.use(
+    (req, res) =>
+      void res.json({
+        path: req.url,
+        authorization: req.headers.authorization ?? null,
+        cookie: req.headers.cookie ?? null,
+      }),
+  );
   upstream = createServer(u).listen(0);
   upstreamUrl = `http://127.0.0.1:${(upstream.address() as AddressInfo).port}`;
   app = buildApp({
-    logger: pino({ level: 'silent' }),
+    logger: createLogger({ service: 'ol-bff-test', level: 'silent' }),
     health: new HealthState(),
     store,
     oidc,
@@ -101,9 +128,14 @@ afterAll(() => {
 async function login(): Promise<string> {
   const start = await request(app).get('/auth/login?returnTo=/warehouses').expect(302);
   const txCookie = (start.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!;
-  const cb = await request(app).get('/auth/callback?code=c&state=s').set('cookie', txCookie).expect(302);
+  const cb = await request(app)
+    .get('/auth/callback?code=c&state=s')
+    .set('cookie', txCookie)
+    .expect(302);
   expect(cb.headers.location).toBe('/warehouses');
-  const sessionCookie = (cb.headers['set-cookie'] as unknown as string[]).find((c) => c.startsWith('__Host-ol_session='))!;
+  const sessionCookie = (cb.headers['set-cookie'] as unknown as string[]).find((c) =>
+    c.startsWith('__Host-ol_session='),
+  )!;
   expect(sessionCookie).toMatch(/HttpOnly/);
   expect(sessionCookie).toMatch(/Secure/);
   return sessionCookie.split(';')[0]!;
@@ -112,7 +144,9 @@ async function login(): Promise<string> {
 describe('BFF', () => {
   it('chặn open redirect trong returnTo', async () => {
     const res = await request(app).get('/auth/login?returnTo=//evil.com').expect(302);
-    const sealed = decodeURIComponent((res.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!.split('=')[1]!);
+    const sealed = decodeURIComponent(
+      (res.headers['set-cookie'] as unknown as string[])[0]!.split(';')[0]!.split('=')[1]!,
+    );
     expect(JSON.parse(sealer.open(sealed)).returnTo).toBe('/');
   });
 
@@ -122,8 +156,15 @@ describe('BFF', () => {
 
   it('đăng nhập → proxy gắn Bearer token, KHÔNG chuyển cookie vào nội bộ', async () => {
     const cookie = await login();
-    const res = await request(app).get('/api/warehouse/v1/tenants/t1/warehouses').set('cookie', cookie).expect(200);
-    expect(res.body).toMatchObject({ path: '/v1/tenants/t1/warehouses', authorization: 'Bearer access-1', cookie: null });
+    const res = await request(app)
+      .get('/api/warehouse/v1/tenants/t1/warehouses')
+      .set('cookie', cookie)
+      .expect(200);
+    expect(res.body).toMatchObject({
+      path: '/v1/tenants/t1/warehouses',
+      authorization: 'Bearer access-1',
+      cookie: null,
+    });
   });
 
   it('trình duyệt không bao giờ thấy token trong /auth/session', async () => {
@@ -136,17 +177,31 @@ describe('BFF', () => {
   it('POST thiếu header CSRF → 403; có header → qua', async () => {
     const cookie = await login();
     await request(app).post('/api/iam/v1/tenants').set('cookie', cookie).send({}).expect(403);
-    await request(app).post('/api/iam/v1/tenants').set('cookie', cookie).set('x-ol-csrf', '1').send({}).expect(200);
+    await request(app)
+      .post('/api/iam/v1/tenants')
+      .set('cookie', cookie)
+      .set('x-ol-csrf', '1')
+      .send({})
+      .expect(200);
   });
 
   it('Origin lạ → 403', async () => {
     const cookie = await login();
-    await request(app).post('/api/iam/v1/x').set('cookie', cookie).set('x-ol-csrf', '1').set('origin', 'https://evil.com').expect(403);
+    await request(app)
+      .post('/api/iam/v1/x')
+      .set('cookie', cookie)
+      .set('x-ol-csrf', '1')
+      .set('origin', 'https://evil.com')
+      .expect(403);
   });
 
   it('không truy cập được /internal qua BFF', async () => {
     const cookie = await login();
-    await request(app).post('/api/iam/internal/v1/authorize').set('cookie', cookie).set('x-ol-csrf', '1').expect(404);
+    await request(app)
+      .post('/api/iam/internal/v1/authorize')
+      .set('cookie', cookie)
+      .set('x-ol-csrf', '1')
+      .expect(404);
   });
 
   it('token sắp hết hạn → tự refresh trước khi proxy', async () => {
@@ -161,12 +216,20 @@ describe('BFF', () => {
 
   it('back-channel logout xóa phiên theo sid', async () => {
     const cookie = await login();
-    await request(app).post('/auth/backchannel-logout').type('form').send({ logout_token: 'valid-logout-token' }).expect(200);
+    await request(app)
+      .post('/auth/backchannel-logout')
+      .type('form')
+      .send({ logout_token: 'valid-logout-token' })
+      .expect(200);
     await request(app).get('/api/iam/v1/me').set('cookie', cookie).expect(401);
   });
 
   it('logout token giả → 400', async () => {
-    await request(app).post('/auth/backchannel-logout').type('form').send({ logout_token: 'forged' }).expect(400);
+    await request(app)
+      .post('/auth/backchannel-logout')
+      .type('form')
+      .send({ logout_token: 'forged' })
+      .expect(400);
   });
 });
 

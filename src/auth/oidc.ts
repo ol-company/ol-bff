@@ -39,15 +39,19 @@ export class OpenIdClient implements OidcPort {
   private readonly jwks: ReturnType<typeof createRemoteJWKSet>;
 
   constructor(private readonly o: OidcOptions) {
-    this.jwks = createRemoteJWKSet(new URL(`${o.issuer}/protocol/openid-connect/certs`), { timeoutDuration: 2_000 });
+    this.jwks = createRemoteJWKSet(new URL(`${o.issuer}/protocol/openid-connect/certs`), {
+      timeoutDuration: 2_000,
+    });
   }
 
   // Tải metadata (.well-known/openid-configuration) lần đầu cần; lỗi thì lần sau thử lại
   private config(): Promise<oidc.Configuration> {
-    this.configPromise ??= oidc.discovery(new URL(this.o.issuer), this.o.clientId, this.o.clientSecret).catch((err) => {
-      this.configPromise = undefined;
-      throw err;
-    });
+    this.configPromise ??= oidc
+      .discovery(new URL(this.o.issuer), this.o.clientId, this.o.clientSecret)
+      .catch((err) => {
+        this.configPromise = undefined;
+        throw err;
+      });
     return this.configPromise;
   }
 
@@ -102,7 +106,10 @@ export class OpenIdClient implements OidcPort {
 
   async endSessionUrl(idToken: string, postLogoutRedirect: string) {
     const config = await this.config();
-    return oidc.buildEndSessionUrl(config, { id_token_hint: idToken, post_logout_redirect_uri: postLogoutRedirect }).href;
+    return oidc.buildEndSessionUrl(config, {
+      id_token_hint: idToken,
+      post_logout_redirect_uri: postLogoutRedirect,
+    }).href;
   }
 
   // OpenID Connect Back-Channel Logout 1.0 — mục 2.6 "Logout Token Validation"
@@ -114,7 +121,8 @@ export class OpenIdClient implements OidcPort {
       algorithms: ['RS256', 'PS256', 'ES256'],
     });
     const events = payload.events as Record<string, unknown> | undefined;
-    if (!events || !('http://schemas.openid.net/event/backchannel-logout' in events)) throw new Error('Thiếu sự kiện backchannel-logout');
+    if (!events || !('http://schemas.openid.net/event/backchannel-logout' in events))
+      throw new Error('Thiếu sự kiện backchannel-logout');
     if ('nonce' in payload) throw new Error('Logout token không được có nonce');
     const sid = typeof payload.sid === 'string' ? payload.sid : null;
     const sub = typeof payload.sub === 'string' ? payload.sub : null;

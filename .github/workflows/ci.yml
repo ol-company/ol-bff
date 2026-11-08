@@ -16,13 +16,13 @@ concurrency:
 
 jobs:
   ci:
-    uses: ol-company/ol-build-tooling/.github/workflows/node-ci.yml@v1.0.0
+    uses: ol-company/ol-build-tooling/.github/workflows/node-ci.yml@5a241c28edd1f33f19e4144323d49395ece4aaf3 # v1.0.0
     permissions:
       contents: read
       packages: read
 
   security:
-    uses: ol-company/ol-build-tooling/.github/workflows/security-scan.yml@v1.0.0
+    uses: ol-company/ol-build-tooling/.github/workflows/security-scan.yml@5a241c28edd1f33f19e4144323d49395ece4aaf3 # v1.0.0
     permissions:
       contents: read
       security-events: write
@@ -32,7 +32,7 @@ jobs:
   # PR: build image + quét lỗ hổng nhưng KHÔNG push — Dockerfile hỏng hoặc image có lỗ hổng thì chặn merge
   image-check:
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@v1.0.0
+    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@5a241c28edd1f33f19e4144323d49395ece4aaf3 # v1.0.0
     with:
       module: bff
       source-repository: ${{ github.repository }}
@@ -49,7 +49,7 @@ jobs:
   release:
     if: github.event_name == 'push'
     needs: [ci, security]
-    uses: ol-company/ol-build-tooling/.github/workflows/release.yml@v1.0.0
+    uses: ol-company/ol-build-tooling/.github/workflows/release.yml@5a241c28edd1f33f19e4144323d49395ece4aaf3 # v1.0.0
     secrets: inherit
     permissions:
       contents: read
@@ -57,7 +57,7 @@ jobs:
   build:
     if: github.event_name == 'push'
     needs: [ci, security, release]
-    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@v1.0.0
+    uses: ol-company/ol-build-tooling/.github/workflows/build-image.yml@5a241c28edd1f33f19e4144323d49395ece4aaf3 # v1.0.0
     with:
       module: bff
       source-repository: ${{ github.repository }}

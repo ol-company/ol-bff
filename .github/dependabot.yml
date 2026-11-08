@@ -9,7 +9,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     registries: [github-packages]
-    schedule: { interval: weekly, day: monday, time: "08:00", timezone: Asia/Ho_Chi_Minh }
+    schedule: { interval: weekly, day: monday, time: '08:00', timezone: Asia/Ho_Chi_Minh }
     open-pull-requests-limit: 10
     commit-message: { prefix: build, include: scope }
     groups:
@@ -21,7 +21,7 @@ updates:
         update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
-    schedule: { interval: weekly, day: monday, time: "08:00", timezone: Asia/Ho_Chi_Minh }
+    schedule: { interval: weekly, day: monday, time: '08:00', timezone: Asia/Ho_Chi_Minh }
     groups:
-      github-actions: { patterns: ["*"] }
+      github-actions: { patterns: ['*'] }
     commit-message: { prefix: ci }

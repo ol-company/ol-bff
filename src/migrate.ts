@@ -16,11 +16,18 @@ const pool = new pg.Pool({
   user: cfg.DB_USER,
   password: cfg.DB_PASSWORD,
   max: 1,
-  ssl: envBoolean(cfg.DB_SSL) ? { rejectUnauthorized: true, ...(cfg.DB_SSL_CA_FILE ? { ca: readFileSync(cfg.DB_SSL_CA_FILE, 'utf8') } : {}) } : undefined,
+  ssl: envBoolean(cfg.DB_SSL)
+    ? {
+        rejectUnauthorized: true,
+        ...(cfg.DB_SSL_CA_FILE ? { ca: readFileSync(cfg.DB_SSL_CA_FILE, 'utf8') } : {}),
+      }
+    : undefined,
 });
 
 try {
-  await migrate(drizzle(pool), { migrationsFolder: fileURLToPath(new URL('../migrations', import.meta.url)) });
+  await migrate(drizzle(pool), {
+    migrationsFolder: fileURLToPath(new URL('../migrations', import.meta.url)),
+  });
   logger.info('migrate_done');
 } catch (err) {
   logger.error({ err }, 'migrate_failed');

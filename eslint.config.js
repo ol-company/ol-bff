@@ -9,7 +9,10 @@ export default tseslint.config(
   {
     rules: {
       // Cho phép tham số không dùng nếu bắt đầu bằng "_" (ví dụ _next trong middleware lỗi)
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       // Cấm console.* — mọi log đi qua pino để có JSON + trace_id
       'no-console': 'error',
       // Bắt buộc dùng `import type` cho import chỉ chứa kiểu
@@ -19,5 +22,10 @@ export default tseslint.config(
   {
     files: ['test/**/*.ts', 'scripts/**/*.{js,mjs,ts}'],
     rules: { 'no-console': 'off' }, // Script và test được in ra console
+  },
+  {
+    // File .mjs/.js không được typescript-eslint tắt `no-undef`, nên phải khai báo global của Node
+    files: ['scripts/**/*.{js,mjs}'],
+    languageOptions: { globals: { process: 'readonly', console: 'readonly' } },
   },
 );
