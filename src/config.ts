@@ -23,7 +23,9 @@ const AppSchema = DbSchema.extend({
   OIDC_CLIENT_SECRET: z.string().min(16),
   OIDC_SCOPES: z.string().default('openid profile email'),
   // Khóa 32 byte mã hóa base64 để mã hóa token trong DB: openssl rand -base64 32
-  SESSION_ENC_KEY: z.string().refine((v) => Buffer.from(v, 'base64').length === 32, 'Cần 32 byte base64'),
+  SESSION_ENC_KEY: z
+    .string()
+    .refine((v) => Buffer.from(v, 'base64').length === 32, 'Cần 32 byte base64'),
   SESSION_IDLE_MINUTES: z.coerce.number().int().positive().default(30),
   SESSION_ABSOLUTE_HOURS: z.coerce.number().int().positive().default(8),
   IAM_INTERNAL_URL: z.url(),

@@ -16,7 +16,11 @@ export function readCookie(header: string | undefined, name: string): string | u
   return header ? parse(header)[name] : undefined;
 }
 
-export function requireSession(deps: { store: SessionStore; oidc: OidcPort; logger: Logger }): RequestHandler {
+export function requireSession(deps: {
+  store: SessionStore;
+  oidc: OidcPort;
+  logger: Logger;
+}): RequestHandler {
   return async (req, _res, next) => {
     const raw = readCookie(req.header('cookie'), SESSION_COOKIE);
     if (!raw) throw new UnauthenticatedError('Chưa đăng nhập');
@@ -25,7 +29,8 @@ export function requireSession(deps: { store: SessionStore; oidc: OidcPort; logg
     if (!session) throw new UnauthenticatedError('Phiên đã hết hạn');
 
     // Access token còn dưới 60 giây → refresh trước khi chuyển tiếp
-    const expiring = (s: { accessExpiresAt: Date }) => s.accessExpiresAt.getTime() - Date.now() < 60_000;
+    const expiring = (s: { accessExpiresAt: Date }) =>
+      s.accessExpiresAt.getTime() - Date.now() < 60_000;
     if (expiring(session)) {
       try {
         session = await deps.store.refreshIfNeeded(idHash, expiring, async (s) => {

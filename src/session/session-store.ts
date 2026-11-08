@@ -24,7 +24,11 @@ export interface SessionStore {
   get(idHash: string): Promise<Session | null>; // null nếu không có hoặc đã hết hạn
   touch(idHash: string): Promise<void>;
   // Làm mới token dưới khóa dòng: nhiều task BFF cùng refresh một session sẽ không giẫm lên nhau
-  refreshIfNeeded(idHash: string, needsRefresh: (s: Session) => boolean, refresh: (s: Session) => Promise<Tokens>): Promise<Session | null>;
+  refreshIfNeeded(
+    idHash: string,
+    needsRefresh: (s: Session) => boolean,
+    refresh: (s: Session) => Promise<Tokens>,
+  ): Promise<Session | null>;
   delete(idHash: string): Promise<void>;
   deleteByKeycloakSid(sid: string): Promise<number>;
   deleteByUser(sub: string): Promise<number>;
@@ -93,7 +97,9 @@ export class PgSessionStore implements SessionStore {
   }
 
   async get(idHash: string) {
-    const { rows } = await this.pool.query<Row>('SELECT * FROM bff.sessions WHERE id_hash = $1', [idHash]);
+    const { rows } = await this.pool.query<Row>('SELECT * FROM bff.sessions WHERE id_hash = $1', [
+      idHash,
+    ]);
     const row = rows[0];
     if (!row || !this.alive(row)) return null;
     return this.toSession(row);
@@ -107,12 +113,19 @@ export class PgSessionStore implements SessionStore {
     );
   }
 
-  async refreshIfNeeded(idHash: string, needsRefresh: (s: Session) => boolean, refresh: (s: Session) => Promise<Tokens>) {
+  async refreshIfNeeded(
+    idHash: string,
+    needsRefresh: (s: Session) => boolean,
+    refresh: (s: Session) => Promise<Tokens>,
+  ) {
     const client = await this.pool.connect();
     try {
       await client.query('BEGIN');
       // FOR UPDATE: task BFF khác đang refresh cùng session phải chờ ở đây
-      const { rows } = await client.query<Row>('SELECT * FROM bff.sessions WHERE id_hash = $1 FOR UPDATE', [idHash]);
+      const { rows } = await client.query<Row>(
+        'SELECT * FROM bff.sessions WHERE id_hash = $1 FOR UPDATE',
+        [idHash],
+      );
       const row = rows[0];
       if (!row || !this.alive(row)) {
         await client.query('ROLLBACK');
@@ -126,7 +139,13 @@ export class PgSessionStore implements SessionStore {
       const t = await refresh(current);
       await client.query(
         `UPDATE bff.sessions SET id_token_enc = $2, access_token_enc = $3, refresh_token_enc = $4, access_expires_at = $5 WHERE id_hash = $1`,
-        [idHash, this.sealer.seal(t.idToken), this.sealer.seal(t.accessToken), t.refreshToken ? this.sealer.seal(t.refreshToken) : null, t.accessExpiresAt],
+        [
+          idHash,
+          this.sealer.seal(t.idToken),
+          this.sealer.seal(t.accessToken),
+          t.refreshToken ? this.sealer.seal(t.refreshToken) : null,
+          t.accessExpiresAt,
+        ],
       );
       await client.query('COMMIT');
       return { ...current, ...t };
@@ -143,11 +162,16 @@ export class PgSessionStore implements SessionStore {
   }
 
   async deleteByKeycloakSid(sid: string) {
-    return (await this.pool.query('DELETE FROM bff.sessions WHERE keycloak_sid = $1', [sid])).rowCount ?? 0;
+    return (
+      (await this.pool.query('DELETE FROM bff.sessions WHERE keycloak_sid = $1', [sid])).rowCount ??
+      0
+    );
   }
 
   async deleteByUser(sub: string) {
-    return (await this.pool.query('DELETE FROM bff.sessions WHERE user_sub = $1', [sub])).rowCount ?? 0;
+    return (
+      (await this.pool.query('DELETE FROM bff.sessions WHERE user_sub = $1', [sub])).rowCount ?? 0
+    );
   }
 
   async purgeExpired() {

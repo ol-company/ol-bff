@@ -30,7 +30,13 @@ export function apiProxy(target: string): RequestHandler {
         // res có thể là socket (websocket) — chỉ trả JSON khi là HTTP response
         if ('writeHead' in res && !res.headersSent) {
           res.writeHead(502, { 'content-type': 'application/problem+json' });
-          res.end(JSON.stringify({ status: 502, code: 'bad_gateway', title: 'Service phía sau không phản hồi' }));
+          res.end(
+            JSON.stringify({
+              status: 502,
+              code: 'bad_gateway',
+              title: 'Service phía sau không phản hồi',
+            }),
+          );
         }
       },
     },

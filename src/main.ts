@@ -22,7 +22,10 @@ const pool = new pg.Pool({
   statement_timeout: 5_000,
   application_name: 'ol-bff',
   ssl: envBoolean(cfg.DB_SSL)
-    ? { rejectUnauthorized: true, ...(cfg.DB_SSL_CA_FILE ? { ca: readFileSync(cfg.DB_SSL_CA_FILE, 'utf8') } : {}) }
+    ? {
+        rejectUnauthorized: true,
+        ...(cfg.DB_SSL_CA_FILE ? { ca: readFileSync(cfg.DB_SSL_CA_FILE, 'utf8') } : {}),
+      }
     : undefined,
 });
 const sealer = new TokenSealer(cfg.SESSION_ENC_KEY);
@@ -50,8 +53,18 @@ const app = buildApp({
 
 // Dọn phiên hết hạn mỗi 10 phút (chạy ở mọi task cũng an toàn vì DELETE là idempotent)
 const purge = setInterval(() => {
-  store.purgeExpired().then((n) => n > 0 && logger.info({ purged: n }, 'sessions_purged')).catch((err) => logger.warn({ err }, 'purge_failed'));
+  store
+    .purgeExpired()
+    .then((n) => n > 0 && logger.info({ purged: n }, 'sessions_purged'))
+    .catch((err) => logger.warn({ err }, 'purge_failed'));
 }, 10 * 60_000);
 purge.unref();
 
-startServer({ app, port: cfg.PORT, logger, health, drainDelayMs: cfg.DRAIN_DELAY_MS, onShutdown: [() => pool.end()] });
+startServer({
+  app,
+  port: cfg.PORT,
+  logger,
+  health,
+  drainDelayMs: cfg.DRAIN_DELAY_MS,
+  onShutdown: [() => pool.end()],
+});

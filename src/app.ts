@@ -43,9 +43,21 @@ export function buildApp(d: AppDeps): Express {
   app.use(healthRouter(d.health, d.healthChecks ?? {}));
 
   // Giới hạn chung theo IP cho /auth/* (chống dò đăng nhập, spam callback)
-  app.use('/auth', rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false }));
   app.use(
-    authRouter({ appUrl: d.appUrl, oidc: d.oidc, store: d.store, sealer: d.sealer, logger: d.logger, absoluteMs: d.absoluteMs, iamInternalUrl: d.upstreams.iam!, fetchImpl: d.fetchImpl }),
+    '/auth',
+    rateLimit({ windowMs: 60_000, limit: 60, standardHeaders: 'draft-8', legacyHeaders: false }),
+  );
+  app.use(
+    authRouter({
+      appUrl: d.appUrl,
+      oidc: d.oidc,
+      store: d.store,
+      sealer: d.sealer,
+      logger: d.logger,
+      absoluteMs: d.absoluteMs,
+      iamInternalUrl: d.upstreams.iam!,
+      fetchImpl: d.fetchImpl,
+    }),
   );
 
   const appOrigin = new URL(d.appUrl).origin;
@@ -61,7 +73,14 @@ export function buildApp(d: AppDeps): Express {
 
   for (const [name, target] of Object.entries(d.upstreams)) {
     // app.use('/api/iam', ...) → Express cắt tiền tố, service nhận đường dẫn /v1/...
-    app.use(`/api/${name}`, guard, csrfGuard(appOrigin), apiLimiter, blockInternalPaths(), apiProxy(target));
+    app.use(
+      `/api/${name}`,
+      guard,
+      csrfGuard(appOrigin),
+      apiLimiter,
+      blockInternalPaths(),
+      apiProxy(target),
+    );
   }
 
   app.use(notFoundHandler());
